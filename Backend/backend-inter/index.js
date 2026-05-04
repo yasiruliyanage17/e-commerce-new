@@ -47,9 +47,15 @@ const app = express();
 app.use(express.json());
 
 // CORS configuration
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+  "https://localhost:5173"
+].filter(Boolean);
+
 app.use(
   cors({
-    origin: true, // Temporarily allow all for debugging
+    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
     methods: ["GET", "POST", "PUT", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true

@@ -79,7 +79,7 @@ router.get("/staff", requireDmsRoles("dms_admin", "company_admin", "branch_manag
 router.post("/admin/staff/:staffId/approve", requireDmsRoles("dms_admin", "company_admin"), approveStaff);
 router.post("/admin/staff/:staffId/suspend", requireDmsRoles("dms_admin", "company_admin"), suspendStaff);
 router.post("/admin/staff/:staffId/transfer", requireDmsRoles("dms_admin", "company_admin"), transferStaff);
-router.patch("/staff/profile/:staffId?", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "delivery_rider"), updateStaff);
+router.patch(["/staff/profile", "/staff/profile/:staffId"], requireDmsRoles("dms_admin", "company_admin", "branch_manager", "delivery_rider"), updateStaff);
 
 router.post("/shipments/create", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "seller"), createShipment);
 router.post("/shipments/assign", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator"), assignShipment);

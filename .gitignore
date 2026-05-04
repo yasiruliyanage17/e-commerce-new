@@ -8,6 +8,7 @@ venv/
 .venv/
 __pycache__/
 *.pyc
+.env.consolidated
 
 AI-ML/venv/
 AI-ML/__pycache__/
