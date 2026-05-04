@@ -141,11 +141,11 @@ services:
       - .\Backend\backend-inter\.env
     environment:
       PORT: 3000
-      MONGO_URI: ${MONGO_URI:-mongodb+srv://admin:123better@cluster0.9v7ko7p.mongodb.net/?appName=Cluster0}
+
       JWT_SECRET: ${JWT_SECRET:-change-this-jwt-secret-in-production}
       FRONTEND_URL: https://localhost:5173
       ENABLE_FACEBOOK_MODULE: ${ENABLE_FACEBOOK_MODULE:-false}
-      FACE_RECOGNITION_ENABLED: "true"
+      FACE_RECOGNITION_ENABLED: "false"
       FACE_SERVICE_URL: http://face-service:5000
       FACE_SIMILARITY_THRESHOLD: "0.45"
       RESTOCK_ML_API: http://restock-ml:8001
@@ -158,6 +158,8 @@ services:
     volumes:
       - .\Backend\backend-inter:/app
       - /app/node_modules
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "3000:3000"
 

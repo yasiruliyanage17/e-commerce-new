@@ -185,5 +185,29 @@ export const dmsService = {
       body: payload,
     });
   },
+  initiateDeliveryConfirmation(trackingNumber) {
+    return dmsRequest(`/shipments/track/${trackingNumber}/initiate-delivery`, {
+      method: "POST",
+    });
+  },
+  verifyDeliveryOtp(trackingNumber, otp) {
+    return dmsRequest(`/shipments/track/${trackingNumber}/verify-otp`, {
+      method: "POST",
+      body: { otp },
+    });
+  },
+  assignShipment(payload) {
+    return dmsRequest("/shipments/assign", {
+      method: "POST",
+      body: payload,
+    });
+  },
+  updateStaffProfile(payload, staffId = null) {
+    const path = staffId ? `/staff/profile/${staffId}` : "/staff/profile";
+    return dmsRequest(path, {
+      method: "PATCH",
+      body: payload,
+    });
+  },
 };
 

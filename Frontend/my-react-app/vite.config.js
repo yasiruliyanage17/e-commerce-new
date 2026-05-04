@@ -43,7 +43,7 @@ export default defineConfig({
 
     proxy: {
       '/api': {
-        target: 'http://backend:3000',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         // secure: false is required because the frontend is now HTTPS
         // (self-signed cert). Without this, Vite refuses to forward

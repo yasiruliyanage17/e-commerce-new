@@ -61,7 +61,7 @@ def generate_embedding(b64_image: str) -> list:
     results = model.represent(
         img_path=img,
         model_name="SFace",
-        enforce_detection=True,
+        enforce_detection=False,
         detector_backend=DETECTOR_BACKEND,
     )
 

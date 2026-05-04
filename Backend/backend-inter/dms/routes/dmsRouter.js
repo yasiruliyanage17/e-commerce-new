@@ -20,6 +20,7 @@ import {
   approveStaff,
   suspendStaff,
   transferStaff,
+  updateStaff,
 } from "../controllers/staffController.js";
 import {
   createShipment,
@@ -31,6 +32,8 @@ import {
   getCenterShipments,
   getCenterRiderAssignments,
   getAdminShipments,
+  initiateDeliveryConfirmation,
+  verifyDeliveryOtp,
 } from "../controllers/shipmentController.js";
 import {
   createRoutingRule,
@@ -76,11 +79,14 @@ router.get("/staff", requireDmsRoles("dms_admin", "company_admin", "branch_manag
 router.post("/admin/staff/:staffId/approve", requireDmsRoles("dms_admin", "company_admin"), approveStaff);
 router.post("/admin/staff/:staffId/suspend", requireDmsRoles("dms_admin", "company_admin"), suspendStaff);
 router.post("/admin/staff/:staffId/transfer", requireDmsRoles("dms_admin", "company_admin"), transferStaff);
+router.patch(["/staff/profile", "/staff/profile/:staffId"], requireDmsRoles("dms_admin", "company_admin", "branch_manager", "delivery_rider"), updateStaff);
 
 router.post("/shipments/create", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "seller"), createShipment);
 router.post("/shipments/assign", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator"), assignShipment);
 router.post("/shipments/scan", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "warehouse_staff", "delivery_rider"), scanShipment);
 router.post("/shipments/scan-seller-qr", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "warehouse_staff", "delivery_rider"), scanSellerQrAtCenter);
+router.post("/shipments/track/:trackingNumber/initiate-delivery", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "delivery_rider"), initiateDeliveryConfirmation);
+router.post("/shipments/track/:trackingNumber/verify-otp", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "delivery_rider"), verifyDeliveryOtp);
 router.get("/shipments/track/:trackingNumber", getShipmentTracking);
 router.get("/shipments/rider/:riderStaffId/queue", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "delivery_rider"), getRiderQueue);
 router.get("/shipments/my-queue", requireDmsRoles("delivery_rider"), getRiderQueue);

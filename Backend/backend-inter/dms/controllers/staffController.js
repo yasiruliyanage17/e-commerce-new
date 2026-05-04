@@ -288,3 +288,55 @@ export async function transferStaff(req, res) {
   }
 }
 
+export async function updateStaff(req, res) {
+  try {
+    const staffId = req.params.staffId || (req.dmsActor.scope === "rider" ? req.dmsActor.staffId : null);
+    if (!staffId) return res.status(400).json({ message: "Staff ID is required" });
+
+    const staff = await CourierStaff.findById(staffId);
+    if (!staff) return res.status(404).json({ message: "Staff not found" });
+
+    // Security check
+    if (req.dmsActor.scope === "branch" && `${staff.assignedBranchId}` !== req.dmsActor.branchId) {
+      return res.status(403).json({ message: "Cannot edit staff outside your branch" });
+    }
+    if (req.dmsActor.scope === "rider" && `${staff._id}` !== req.dmsActor.staffId) {
+      return res.status(403).json({ message: "Cannot edit other riders" });
+    }
+
+    const { fullName, phone, email, idNumber } = req.body;
+    
+    if (email && email !== staff.email) {
+      const existing = await userModel.findOne({ email });
+      if (existing) return res.status(400).json({ message: "Email already in use" });
+      
+      staff.email = email;
+      if (staff.authUserId) {
+        await userModel.findByIdAndUpdate(staff.authUserId, { email });
+      }
+    }
+
+    if (fullName) staff.fullName = fullName;
+    if (phone) staff.phone = phone;
+    if (idNumber) staff.idVerification.idNumber = idNumber;
+
+    await staff.save();
+
+    await createAuditLog({
+      category: "dms_ops",
+      action: "staff.updated",
+      actor: actorForAudit(req),
+      context: {
+        courierCompanyId: staff.courierCompanyId,
+        branchId: staff.assignedBranchId,
+        targetType: "courier_staff",
+        targetId: `${staff._id}`,
+      },
+      req,
+    });
+
+    return res.json({ message: "Staff updated successfully", staff });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to update staff", error: error.message });
+  }
+}
