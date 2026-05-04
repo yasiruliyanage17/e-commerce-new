@@ -697,6 +697,7 @@ export async function getRiderQueue(req, res) {
       )
     )
       .sort({ queuePosition: 1, assignedAt: 1 })
+      .populate("deliveryOrderId")
       .lean();
 
     return res.json({ count: assignments.length, assignments });
@@ -759,6 +760,7 @@ export async function getCenterRiderAssignments(req, res) {
 
     const assignments = await DeliveryAssignment.find(filters)
       .sort({ queuePosition: 1, assignedAt: 1 })
+      .populate("deliveryOrderId")
       .lean();
 
     return res.json({ count: assignments.length, assignments });
@@ -797,3 +799,131 @@ export async function getAdminShipments(req, res) {
   }
 }
 
+
+export async function initiateDeliveryConfirmation(req, res) {
+  try {
+    const { trackingNumber } = req.params;
+    const order = await DeliveryOrder.findOne(withTenantScope(req, { trackingNumber }));
+
+    if (!order) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+
+    if (order.status === "delivered") {
+      return res.status(400).json({ message: "Shipment is already delivered" });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes expiry
+
+    order.verification = {
+      otp,
+      otpExpiresAt: expiresAt,
+      isVerified: false,
+    };
+
+    await order.save();
+
+    // In a real system, send SMS here. For now, we log it and return it for demo.
+    console.log(`[DMS] OTP for order ${trackingNumber}: ${otp}`);
+
+    await createAuditLog({
+      category: "dms_workflow",
+      action: "shipment.delivery_otp_initiated",
+      actor: actorForAudit(req),
+      context: {
+        courierCompanyId: order.courierCompanyId,
+        branchId: order.currentBranchId,
+        deliveryOrderId: order._id,
+        trackingNumber: order.trackingNumber,
+      },
+      req,
+    });
+
+    return res.json({
+      message: "Delivery OTP initiated. Please check your mobile device.",
+      expiresAt,
+      // Returning OTP for development/testing convenience
+      otp: process.env.NODE_ENV === "production" ? undefined : otp,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to initiate delivery confirmation", error: error.message });
+  }
+}
+
+export async function verifyDeliveryOtp(req, res) {
+  try {
+    const { trackingNumber } = req.params;
+    const { otp } = req.body;
+
+    if (!otp) {
+      return res.status(400).json({ message: "OTP is required" });
+    }
+
+    const order = await DeliveryOrder.findOne(withTenantScope(req, { trackingNumber }));
+
+    if (!order) {
+      return res.status(404).json({ message: "Shipment not found" });
+    }
+
+    if (order.verification.otp !== otp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    if (order.verification.otpExpiresAt < new Date()) {
+      return res.status(400).json({ message: "OTP has expired" });
+    }
+
+    order.verification.isVerified = true;
+    order.verification.verifiedAt = new Date();
+    order.status = "delivered";
+    applyStatusTimeline(order, "delivered");
+
+    if (order.cod && order.cod.enabled) {
+      order.cod.collected = true;
+      order.cod.collectedAt = new Date();
+      order.cod.collectedByRiderId = req.dmsActor?.staffId || null;
+    }
+
+    await order.save();
+
+    // Update Ecommerce Order
+    if (order.ecommerceOrderId) {
+      const ecommerceOrder = await Order.findById(order.ecommerceOrderId);
+      if (ecommerceOrder) {
+        ecommerceOrder.status = "delivered";
+        await ecommerceOrder.save();
+      }
+    }
+
+    await createAuditLog({
+      category: "dms_workflow",
+      action: "shipment.delivered_via_otp",
+      actor: actorForAudit(req),
+      context: {
+        courierCompanyId: order.courierCompanyId,
+        branchId: order.currentBranchId,
+        deliveryOrderId: order._id,
+        trackingNumber: order.trackingNumber,
+      },
+      req,
+    });
+
+    await emitDeliveryNotification({
+      type: "delivered",
+      recipients: [order.customerId, order.sellerId].filter(Boolean),
+      payload: { trackingNumber: order.trackingNumber, status: "delivered" },
+      actor: actorForAudit(req),
+      context: { courierCompanyId: order.courierCompanyId, deliveryOrderId: order._id, trackingNumber: order.trackingNumber },
+      req,
+    });
+
+    return res.json({
+      message: "Shipment delivered successfully. OTP verified.",
+      order,
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to verify delivery OTP", error: error.message });
+  }
+}

@@ -31,6 +31,8 @@ import {
   getCenterShipments,
   getCenterRiderAssignments,
   getAdminShipments,
+  initiateDeliveryConfirmation,
+  verifyDeliveryOtp,
 } from "../controllers/shipmentController.js";
 import {
   createRoutingRule,
@@ -81,6 +83,8 @@ router.post("/shipments/create", requireDmsRoles("dms_admin", "company_admin", "
 router.post("/shipments/assign", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator"), assignShipment);
 router.post("/shipments/scan", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "warehouse_staff", "delivery_rider"), scanShipment);
 router.post("/shipments/scan-seller-qr", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "warehouse_staff", "delivery_rider"), scanSellerQrAtCenter);
+router.post("/shipments/track/:trackingNumber/initiate-delivery", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "delivery_rider"), initiateDeliveryConfirmation);
+router.post("/shipments/track/:trackingNumber/verify-otp", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "delivery_rider"), verifyDeliveryOtp);
 router.get("/shipments/track/:trackingNumber", getShipmentTracking);
 router.get("/shipments/rider/:riderStaffId/queue", requireDmsRoles("dms_admin", "company_admin", "branch_manager", "dispatch_operator", "delivery_rider"), getRiderQueue);
 router.get("/shipments/my-queue", requireDmsRoles("delivery_rider"), getRiderQueue);

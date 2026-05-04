@@ -93,6 +93,12 @@ const deliveryOrderSchema = new mongoose.Schema(
     expectedDeliveryAt: { type: Date, default: null, index: true },
     deliveryFee: { type: Number, default: 0 },
     createdByUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null, index: true },
+    verification: {
+      otp: { type: String, default: null },
+      otpExpiresAt: { type: Date, default: null },
+      isVerified: { type: Boolean, default: false },
+      verifiedAt: { type: Date, default: null },
+    },
     updatedByStaffId: { type: mongoose.Schema.Types.ObjectId, ref: "CourierStaff", default: null },
   },
   { timestamps: true }

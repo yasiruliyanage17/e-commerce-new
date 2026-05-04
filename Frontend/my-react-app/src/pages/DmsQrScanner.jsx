@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Html5Qrcode } from "html5-qrcode";
 import { dmsService } from "../services/dmsService";
+import { QRCodeCanvas } from "qrcode.react";
 
 export default function DmsQrScanner() {
   const scannerRef = useRef(null);
@@ -264,18 +265,69 @@ export default function DmsQrScanner() {
 
         {/* Scan Results */}
         {lastResult && (
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              Last Scan Result
-            </h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              <ResultItem label="Tracking" value={lastResult?.deliveryOrder?.trackingNumber} />
-              <ResultItem label="D. Status" value={lastResult?.deliveryOrder?.status} />
-              <ResultItem label="Order ID" value={lastResult?.ecommerceOrder?.id} />
-              <ResultItem label="E. Status" value={lastResult?.ecommerceOrder?.status} />
-              <ResultItem label="Type" value={lastResult?.event?.scanType} />
-              <ResultItem label="Time" value={formatDate(lastResult?.event?.occurredAt)} />
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <h2 className="text-2xl font-black flex items-center gap-3">
+                <span className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                Scan Success: Transfer Registered
+              </h2>
+              <div className="px-4 py-2 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-lg text-xs font-bold uppercase tracking-widest">
+                {lastResult?.deliveryOrder?.status || "RECEIVED"}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Deliver QR Code Column */}
+              <div className="bg-white/5 rounded-2xl p-6 border border-white/5 flex flex-col items-center justify-center text-center space-y-4">
+                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Generated Deliver QR</div>
+                <div className="p-4 bg-white rounded-2xl shadow-2xl shadow-indigo-500/20">
+                  <QRCodeCanvas 
+                    value={lastResult?.deliveryOrder?.trackingNumber || "N/A"} 
+                    size={160}
+                    level="H"
+                    includeMargin={false}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <div className="text-lg font-black tracking-tighter text-indigo-400">
+                    {lastResult?.deliveryOrder?.trackingNumber}
+                  </div>
+                  <div className="text-[9px] font-bold text-slate-500 uppercase">Tracking Number</div>
+                </div>
+              </div>
+
+              {/* Order & Product Details */}
+              <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  <DetailSection title="Recipient Details">
+                    <DetailItem label="Customer" value={lastResult?.deliveryOrder?.destination?.fullName} />
+                    <DetailItem label="Phone" value={lastResult?.deliveryOrder?.destination?.phone} />
+                    <DetailItem label="Address" value={lastResult?.deliveryOrder?.destination?.address} />
+                    <DetailItem label="City" value={`${lastResult?.deliveryOrder?.destination?.city}, ${lastResult?.deliveryOrder?.destination?.province}`} />
+                  </DetailSection>
+                </div>
+
+                <div className="space-y-6">
+                  <DetailSection title="Product & Logistics">
+                    <DetailItem label="Package" value={lastResult?.deliveryOrder?.packageDetails?.packageLabel || "Standard Package"} />
+                    <DetailItem label="Items" value={`${lastResult?.deliveryOrder?.packageDetails?.itemCount || 1} Unit(s)`} />
+                    <DetailItem label="COD Amount" value={lastResult?.deliveryOrder?.cod?.enabled ? `Rs. ${lastResult?.deliveryOrder?.cod?.amount.toLocaleString()}` : "PREPAID"} highlight={lastResult?.deliveryOrder?.cod?.enabled} />
+                    <DetailItem label="Scan Time" value={formatDate(lastResult?.event?.occurredAt)} />
+                  </DetailSection>
+                </div>
+              </div>
+            </div>
+            
+            <div className="pt-4 border-t border-white/5 flex flex-col md:flex-row gap-4 items-center justify-between">
+              <div className="text-xs text-slate-500 font-medium">
+                The Deliver QR above must be scanned by the rider during final delivery.
+              </div>
+              <button 
+                onClick={() => window.print()}
+                className="w-full md:w-auto bg-white text-slate-950 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-slate-200 transition-colors active:scale-95"
+              >
+                Print Label
+              </button>
             </div>
           </div>
         )}
@@ -284,11 +336,24 @@ export default function DmsQrScanner() {
   );
 }
 
-function ResultItem({ label, value }) {
+function DetailSection({ title, children }) {
   return (
-    <div className="bg-white/5 border border-white/5 rounded-xl p-4 flex flex-col">
-      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">{label}</div>
-      <div className="text-xs font-bold text-slate-200 truncate">{value || "N/A"}</div>
+    <div className="space-y-3">
+      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500/80">{title}</h3>
+      <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 space-y-3">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function DetailItem({ label, value, highlight = false }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider">{label}</span>
+      <span className={`text-sm font-bold truncate ${highlight ? "text-amber-400" : "text-slate-200"}`}>
+        {value || "Not Provided"}
+      </span>
     </div>
   );
 }
