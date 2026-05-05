@@ -9,7 +9,7 @@ import arjunImg from '/src/assets/arjun.png';
 import geethmaImg from '/src/assets/geethma.png';
 import yunethImg from '/src/assets/yuneth.png';
 import yasiruImg from '/src/assets/yasiru.png';
-import TharushaImg from '/src/assets/Tharusha.png';
+import TharushaImg from '/src/assets/tharusha.png';
 
 // ✅ Team Members Data (Add new objects here to expand the team)
 const teamMembers = [
