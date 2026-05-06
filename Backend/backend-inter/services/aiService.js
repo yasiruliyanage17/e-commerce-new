@@ -2,6 +2,11 @@ import axios from "axios";
 import Product from "../models/products.js";
 
 export const sendProductsToAI = async () => {
+  if (!process.env.AI_SERVICE_URL) {
+    console.log("⏭️  AI_SERVICE_URL not set — skipping daily AI sync");
+    return;
+  }
+
   try {
     // 1️⃣ Fetch products from DB
     const products = await Product.find(
@@ -16,7 +21,6 @@ export const sendProductsToAI = async () => {
       soldCount: p.howManyproductsSold
     }));
 
-    // ✅ ADD THIS LINE RIGHT HERE
     console.log("🔹 Keywords being sent to AI:", keywords);
 
     // 3️⃣ Send to AI service
@@ -34,9 +38,4 @@ export const sendProductsToAI = async () => {
   } catch (error) {
     console.error("❌ Failed to send products to AI:", error.message);
   }
-
-  // TEMPORARY TEST
-sendProductsToAI();
-
-
 };

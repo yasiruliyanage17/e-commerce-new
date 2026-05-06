@@ -33,6 +33,10 @@ const CACHE_TTL_DETAILS = 30 * 60 * 1000;
 
 // ── Serper helpers ──
 async function serperSearch(query, type = "search") {
+  if (!process.env.SERPER_API_KEY) {
+    return null;
+  }
+
   const url =
     type === "shopping"
       ? "https://google.serper.dev/shopping"
@@ -131,6 +135,7 @@ export const getProductSuggestions = async (req, res) => {
     // ── Primary: Serper web search ──
     if (process.env.SERPER_API_KEY) {
       const data = await serperSearch(`${query.trim()} product`);
+      if (!data) return res.json({ suggestions: [] });
 
       const titles = new Set();
 
@@ -287,7 +292,7 @@ Rules:
 
       // Build description from search snippets
       let description = "";
-      if (searchData.organic && searchData.organic.length > 0) {
+      if (searchData && searchData.organic && searchData.organic.length > 0) {
         const snippets = searchData.organic
           .slice(0, 3)
           .map((r) => r.snippet)
@@ -301,7 +306,7 @@ Rules:
       // Extract variants from shopping results
       const variants = [];
       const seenNames = new Set();
-      if (shopData.shopping) {
+      if (shopData && shopData.shopping) {
         for (const item of shopData.shopping.slice(0, 8)) {
           const vName = item.title || "";
           const shortName = vName.substring(0, 80);
